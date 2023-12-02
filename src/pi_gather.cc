@@ -15,7 +15,6 @@ int main(int argc, char **argv)
     double start_time = MPI_Wtime();
     double pi_result;
     long long int total_tosses = atoi(argv[1]);
-    long long int total_in_circle = 0;
     int world_rank, world_size;
     // ---
     MPI_Comm_size( MPI_COMM_WORLD, &world_size);
@@ -31,10 +30,9 @@ int main(int argc, char **argv)
     
 
     // -------------- get the number of tosses in this processor ------------------
+    long long int total_in_circle = 0;
     long long int private_num_in_circle = 0; //initial to 0
     long long int num_of_tosses = total_tosses/world_size;
-    int x_positive = 0;
-    int y_positive = 0;
     unsigned int seed = world_rank * cur_time;
     
 
