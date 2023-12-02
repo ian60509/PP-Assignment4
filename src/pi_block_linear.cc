@@ -34,21 +34,17 @@ int main(int argc, char **argv)
     int y_positive = 0;
     unsigned int seed = world_rank * cur_time;
     
-    // printf("I'm %d-th processor: number of tosses of mine=%d\n",world_rank, num_of_tosses);
 
     for ( int toss = 0; toss < num_of_tosses; toss ++) {
         double x =((double)rand_r(&seed) *2 / (RAND_MAX + 1.0)) -1 ;
         double y =((double)rand_r(&seed) *2 / (RAND_MAX + 1.0)) -1 ;
         
         double distance_squared = x * x + y * y;
-        // printf("x=%f, y=%f  distance_squared=%f\n",x,y,distance_squared );
         if ( distance_squared <= 1){ 
             num_in_circle++;
         }
     }
-    // printf("x_positive++=%d, y_positive++=%d\n",x_positive++,y_positive++);
-    // printf("num_in_circle = %lld\n",num_in_circle);
-    // printf("num in circle = %d\n",num_in_circle);
+    
     
     // ---------------------------------------------------------------
     
