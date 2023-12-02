@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <math.h>
 #pragma GCC optimize("Ofast", "unroll-loops")
 
 
@@ -46,27 +47,25 @@ int main(int argc, char **argv)
             num_in_circle++;
         }
     }
-    printf("I'm %d-processor, the number in circle = %lld\n", world_rank, num_in_circle);
+    // printf("I'm %d-processor, the number in circle = %lld\n", world_rank, num_in_circle);
     private_num_in_circle = num_in_circle;
     // ---------------------------------------------------------------
     // binary reduction
-    for (int round = 1; round < world_size; round <<= 1) {
-        int transmission_rage = 2^round;
+    for (int round = 1; round < world_size; round*=2) {
+        int transmission_rage = pow(2, round);
+        if(world_rank == 0) printf("round = %d, trans range = %d\n",round,  transmission_rage);
 
-        if ((world_rank & round) != 0) {
-            // MPI_Send(&local_numOfhit, 1, MPI_LONG_LONG_INT, world_rank - round, 0, MPI_COMM_WORLD);
+        if (world_rank % transmission_rage == (transmission_rage/2)) {
+            printf("I'm %d-processor, need to send to %d\n", world_rank, world_rank - round);
             MPI_Send(&private_num_in_circle, 1, MPI_LONG_LONG_INT, world_rank - round, 0, MPI_COMM_WORLD);
-            break;
-        } else if ((world_rank + round < world_size)){
+            break; //不需要再send了
+        } else if (world_rank % transmission_rage == 0){ //I'm receiver
             long long int recv = 0;
             MPI_Recv(&recv, 1, MPI_LONG_LONG_INT, world_rank + round, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            
             private_num_in_circle += recv;
-            printf("I'm %d-processor, I receive = %lld, now my private = %lld\n", world_rank, recv, private_num_in_circle);
         }
     }
 
-    //
     if (world_rank == 0)
     {
         total_in_circle = private_num_in_circle;
