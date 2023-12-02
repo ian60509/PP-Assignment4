@@ -17,6 +17,7 @@ int main(int argc, char **argv)
     long long int total_tosses = atoi(argv[1]);
     long long int total_in_circle = 0;
     int world_rank, world_size;
+    // ---
     MPI_Comm_size( MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank( MPI_COMM_WORLD, &world_rank);
     
