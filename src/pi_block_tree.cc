@@ -52,7 +52,8 @@ int main(int argc, char **argv)
     // binary reduction
     for (int round = 1; round < world_size; round <<= 1) {
         int transmission_rage = 2^round;
-        if ((world_rank % round) != 0) {
+
+        if ((world_rank & round) != 0) {
             // MPI_Send(&local_numOfhit, 1, MPI_LONG_LONG_INT, world_rank - round, 0, MPI_COMM_WORLD);
             MPI_Send(&private_num_in_circle, 1, MPI_LONG_LONG_INT, world_rank - round, 0, MPI_COMM_WORLD);
             break;
