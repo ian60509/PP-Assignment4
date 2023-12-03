@@ -4,7 +4,6 @@
 #include <time.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <math.h>
 #pragma GCC optimize("Ofast", "unroll-loops")
 
 
@@ -17,8 +16,8 @@ int main(int argc, char **argv)
     double pi_result;
     long long int total_tosses = atoi(argv[1]);
     long long int total_in_circle = 0;
-    long long int private_num_in_circle = 0;
     int world_rank, world_size;
+    // ---
     MPI_Comm_size( MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank( MPI_COMM_WORLD, &world_rank);
     
@@ -36,7 +35,6 @@ int main(int argc, char **argv)
     int y_positive = 0;
     unsigned int seed = world_rank * cur_time;
     
-    // printf("I'm %d-th processor: number of tosses of mine=%d\n",world_rank, num_of_tosses);
 
     for ( int toss = 0; toss < num_of_tosses; toss ++) {
         double x =((double)rand_r(&seed) *2 / (RAND_MAX + 1.0)) -1 ;
@@ -47,28 +45,35 @@ int main(int argc, char **argv)
             num_in_circle++;
         }
     }
-    // printf("I'm %d-processor, the number in circle = %lld\n", world_rank, num_in_circle);
-    private_num_in_circle = num_in_circle;
+    
+    
     // ---------------------------------------------------------------
-    // binary reduction
-    for (int round = 1; round < world_size; round*=2) {
-        int transmission_rage = pow(2, round);
-        
+    
 
-        if (world_rank % transmission_rage == (transmission_rage/2)) {
-            // printf("I'm %d-processor, need to send to %d\n", world_rank, world_rank - round);
-            MPI_Send(&private_num_in_circle, 1, MPI_LONG_LONG_INT, world_rank - round, 0, MPI_COMM_WORLD);
-            break; //不需要再send了
-        } else if (world_rank % transmission_rage == 0){ //I'm receiver
-            long long int recv = 0;
-            MPI_Recv(&recv, 1, MPI_LONG_LONG_INT, world_rank + round, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            private_num_in_circle += recv;
+    if (world_rank > 0)
+    {   
+        int dest = 0;
+        MPI_Send(&num_in_circle, 1, MPI_LONG_LONG_INT, dest, 0, MPI_COMM_WORLD);
+        
+    }else if (world_rank == 0) //master
+    {
+        MPI_Request requests[world_size];
+        MPI_Status status[world_size];
+        long long int receive_data[world_size]; 
+        receive_data[0] = num_in_circle;
+
+        for (int i = 1;i < world_size;i++)
+            MPI_Irecv(&(receive_data[i]), 1, MPI_LONG_LONG_INT, i, 0, MPI_COMM_WORLD, &(requests[i - 1]));
+
+        MPI_Waitall(world_size - 1, requests, status);
+
+        for (int i = 0;i < world_size;i++) {
+            total_in_circle += receive_data[i];
         }
     }
 
     if (world_rank == 0)
     {
-        total_in_circle = private_num_in_circle;
         // TODO: process PI result
         pi_result = 4.0 * (total_in_circle / (double)total_tosses);
         // --- DON'T TOUCH ---
